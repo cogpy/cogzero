@@ -30,7 +30,7 @@ def check_manager():
             print(f"     - AtomSpaces: {stats['atomspaces']}")
         else:
             print("  ⚠️  OpenCog manager is available but OpenCog is not installed")
-            print("     Install with: pip install opencog opencog-cogserver")
+            print("     Install with: pip install opencog==5.0.3 opencog-cogserver==5.0.3")
         
         return True
     except Exception as e:

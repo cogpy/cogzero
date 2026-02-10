@@ -133,9 +133,15 @@ class OpenCogManager:
         }
         
         for agent_id, atomspace in self._atomspaces.items():
+            try:
+                # Get UUID if available (may not be in all OpenCog versions)
+                uuid_str = str(atomspace.get_uuid()) if hasattr(atomspace, 'get_uuid') else "N/A"
+            except AttributeError:
+                uuid_str = "N/A"
+            
             stats["agents"][agent_id] = {
                 "atom_count": len(atomspace),
-                "uuid": str(atomspace.get_uuid())
+                "uuid": uuid_str
             }
         
         return stats

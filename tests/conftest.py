@@ -1,5 +1,10 @@
 """
-Pytest configuration for Agent Zero testing suite.
+Pytest configuration for Agent Zero OpenCog integration testing.
+
+This module provides basic pytest configuration including:
+- Test environment setup
+- Custom markers for OpenCog tests
+- Automatic skipping of tests when OpenCog is not installed
 """
 
 import os
