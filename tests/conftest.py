@@ -42,7 +42,5 @@ def pytest_collection_modifyitems(config, items):
     skip_opencog = pytest.mark.skip(reason="OpenCog not installed")
 
     for item in items:
-        if "opencog" in item.keywords and not opencog_installed:
-            item.add_marker(skip_opencog)
-        if "requires_opencog" in item.keywords and not opencog_installed:
+        if ("opencog" in item.keywords or "requires_opencog" in item.keywords) and not opencog_installed:
             item.add_marker(skip_opencog)
