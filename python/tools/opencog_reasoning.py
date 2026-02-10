@@ -1,5 +1,6 @@
 from python.helpers.tool import Tool, Response
 from python.helpers.print_style import PrintStyle
+from python.helpers.opencog_manager import get_opencog_manager
 import json
 
 class OpenCogReasoning(Tool):
@@ -15,19 +16,25 @@ class OpenCogReasoning(Tool):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._opencog_mgr = get_opencog_manager()
         self._atomspace = None
         self._reasoning_engine = None
         self._initialize_reasoning()
 
     def _initialize_reasoning(self):
-        """Initialize OpenCog reasoning components."""
+        """Initialize OpenCog reasoning components using the shared manager."""
+        if not self._opencog_mgr.is_available():
+            PrintStyle.error("OpenCog reasoning not available")
+            return
+        
         try:
-            from opencog.atomspace import AtomSpace, types
-            from opencog.type_constructors import (
-                ConceptNode, PredicateNode, VariableNode,
-                EvaluationLink, InheritanceLink, ImplicationLink, 
-                AndLink, OrLink, NotLink, ListLink
-            )
+            # Get agent context ID for shared atomspace
+            agent_id = getattr(self.agent.context, 'id', 'default')
+            self._atomspace = self._opencog_mgr.get_atomspace(agent_id)
+            
+            # Get type constructors
+            type_constructors = self._opencog_mgr.get_type_constructors()
+            self._types = self._opencog_mgr.get_types()
             
             # Try to import reasoning components
             try:
@@ -37,26 +44,21 @@ class OpenCogReasoning(Tool):
                 self._pln_available = False
                 PrintStyle.warning("PLN (Probabilistic Logic Networks) not available")
             
-            # Get or create atomspace (share with opencog_atomspace tool if it exists)
-            self._atomspace = AtomSpace()
-            from opencog.type_constructors import set_default_atomspace
-            set_default_atomspace(self._atomspace)
+            if type_constructors:
+                # Store constructors for easy access
+                self._ConceptNode = type_constructors.ConceptNode
+                self._PredicateNode = type_constructors.PredicateNode
+                self._VariableNode = type_constructors.VariableNode
+                self._EvaluationLink = type_constructors.EvaluationLink
+                self._InheritanceLink = type_constructors.InheritanceLink
+                self._ImplicationLink = type_constructors.ImplicationLink
+                self._AndLink = type_constructors.AndLink
+                self._OrLink = type_constructors.OrLink
+                self._NotLink = type_constructors.NotLink
+                self._ListLink = type_constructors.ListLink
             
-            # Store constructors for easy access
-            self._types = types
-            self._ConceptNode = ConceptNode
-            self._PredicateNode = PredicateNode
-            self._VariableNode = VariableNode
-            self._EvaluationLink = EvaluationLink
-            self._InheritanceLink = InheritanceLink
-            self._ImplicationLink = ImplicationLink
-            self._AndLink = AndLink
-            self._OrLink = OrLink
-            self._NotLink = NotLink
-            self._ListLink = ListLink
-            
-        except ImportError as e:
-            PrintStyle.error(f"OpenCog reasoning not available: {e}")
+        except Exception as e:
+            PrintStyle.error(f"Failed to initialize OpenCog reasoning: {e}")
             self._atomspace = None
 
     async def execute(self, action="info", **kwargs):
