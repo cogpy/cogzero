@@ -1,5 +1,6 @@
 from python.helpers.extension import Extension
 from python.helpers.print_style import PrintStyle
+from python.helpers.opencog_manager import get_opencog_manager
 
 class OpenCogInit(Extension):
     """
@@ -18,26 +19,37 @@ class OpenCogInit(Extension):
             if not settings.get("opencog_enabled", True):
                 return  # OpenCog integration disabled in settings
             
+            # Get the shared OpenCog manager
+            opencog_mgr = get_opencog_manager()
+            
+            if not opencog_mgr.is_available():
+                PrintStyle.warning("OpenCog not available - skipping initialization")
+                PrintStyle.info("To enable OpenCog integration, install: pip install opencog opencog-cogserver")
+                return
+            
             # Check if OpenCog is available
             try:
-                from opencog.atomspace import AtomSpace
-                from opencog.type_constructors import ConceptNode, set_default_atomspace
+                from opencog.type_constructors import ConceptNode
                 
                 # Create agent-specific data for OpenCog if it doesn't exist
                 if not hasattr(self.agent, 'opencog_data'):
                     self.agent.opencog_data = {}
                 
+                # Get or create shared AtomSpace for this agent's context
+                # Use agent context ID for isolation between different conversations
+                agent_id = getattr(self.agent.context, 'id', 'default')
+                atomspace = opencog_mgr.get_atomspace(agent_id)
+                
                 # Initialize AtomSpace for this agent if not already done
                 if 'atomspace' not in self.agent.opencog_data:
-                    atomspace = AtomSpace()
-                    set_default_atomspace(atomspace)
                     self.agent.opencog_data['atomspace'] = atomspace
+                    self.agent.opencog_data['agent_id'] = agent_id
                     
                     # Add some basic knowledge about the agent
                     agent_concept = ConceptNode(f"Agent_{self.agent.number}")
                     self.agent.opencog_data['agent_concept'] = agent_concept
                     
-                    PrintStyle(font_color="green").print(f"OpenCog AtomSpace initialized for {self.agent.agent_name}")
+                    PrintStyle(font_color="green").print(f"OpenCog AtomSpace initialized for {self.agent.agent_name} (context: {agent_id})")
                     
                     # Add basic facts about the agent
                     from opencog.type_constructors import PredicateNode, EvaluationLink, ListLink
@@ -72,9 +84,9 @@ class OpenCogInit(Extension):
                         except Exception as domain_error:
                             PrintStyle.warning(f"Failed to load domain knowledge '{default_domain}': {domain_error}")
                 
-            except ImportError:
-                PrintStyle.warning("OpenCog not available - skipping initialization")
-                PrintStyle.info("To enable OpenCog integration, install: pip install opencog")
+            except ImportError as e:
+                PrintStyle.warning(f"OpenCog not available - skipping initialization: {e}")
+                PrintStyle.info("To enable OpenCog integration, install: pip install opencog opencog-cogserver")
                 
         except Exception as e:
             PrintStyle.error(f"Failed to initialize OpenCog: {e}")

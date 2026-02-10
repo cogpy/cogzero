@@ -1,5 +1,6 @@
 from python.helpers.tool import Tool, Response
 from python.helpers.print_style import PrintStyle
+from python.helpers.opencog_manager import get_opencog_manager
 import json
 
 class OpenCogAtomSpace(Tool):
@@ -12,29 +13,34 @@ class OpenCogAtomSpace(Tool):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._opencog_mgr = get_opencog_manager()
         self._atomspace = None
         self._initialize_atomspace()
 
     def _initialize_atomspace(self):
-        """Initialize the OpenCog AtomSpace."""
+        """Initialize the OpenCog AtomSpace using the shared manager."""
+        if not self._opencog_mgr.is_available():
+            PrintStyle.error("OpenCog not available")
+            PrintStyle.warning("Please install OpenCog: pip install opencog opencog-cogserver")
+            return
+        
         try:
-            from opencog.atomspace import AtomSpace, types
-            from opencog.type_constructors import ConceptNode, PredicateNode, EvaluationLink, ListLink
+            # Get agent context ID for shared atomspace
+            agent_id = getattr(self.agent.context, 'id', 'default')
+            self._atomspace = self._opencog_mgr.get_atomspace(agent_id)
             
-            self._atomspace = AtomSpace()
-            self._types = types
-            self._ConceptNode = ConceptNode
-            self._PredicateNode = PredicateNode
-            self._EvaluationLink = EvaluationLink
-            self._ListLink = ListLink
+            # Get type constructors
+            type_constructors = self._opencog_mgr.get_type_constructors()
+            self._types = self._opencog_mgr.get_types()
             
-            # Set the global atomspace for type constructors
-            from opencog.type_constructors import set_default_atomspace
-            set_default_atomspace(self._atomspace)
+            if type_constructors:
+                self._ConceptNode = type_constructors.ConceptNode
+                self._PredicateNode = type_constructors.PredicateNode
+                self._EvaluationLink = type_constructors.EvaluationLink
+                self._ListLink = type_constructors.ListLink
             
-        except ImportError as e:
-            PrintStyle.error(f"OpenCog not available: {e}")
-            PrintStyle.warning("Please install OpenCog: pip install opencog")
+        except Exception as e:
+            PrintStyle.error(f"Failed to initialize OpenCog AtomSpace: {e}")
             self._atomspace = None
 
     async def execute(self, action="info", **kwargs):

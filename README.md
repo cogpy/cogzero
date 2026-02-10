@@ -1,9 +1,19 @@
 <div align="center">
 
-# `Agent Zero`
-
+# `CogZero` - Agent Zero with OpenCog Integration
 
 [![Agent Zero Website](https://img.shields.io/badge/Website-agent--zero.ai-0A192F?style=for-the-badge&logo=vercel&logoColor=white)](https://agent-zero.ai) [![Thanks to Sponsors](https://img.shields.io/badge/GitHub%20Sponsors-Thanks%20to%20Sponsors-FF69B4?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/agent0ai) [![Follow on X](https://img.shields.io/badge/X-Follow-000000?style=for-the-badge&logo=x&logoColor=white)](https://x.com/Agent0ai) [![Join our Discord](https://img.shields.io/badge/Discord-Join%20our%20server-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/B8KZKNsPpj) [![Subscribe on YouTube](https://img.shields.io/badge/YouTube-Subscribe-red?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/@AgentZeroFW) [![Connect on LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/jan-tomasek/) [![Follow on Warpcast](https://img.shields.io/badge/Warpcast-Follow-5A32F3?style=for-the-badge)](https://warpcast.com/agent-zero) 
+
+
+## 🧠 OpenCog Integration
+
+This fork of Agent Zero integrates the **OpenCog AGI framework** for advanced cognitive capabilities:
+- 🔗 **Knowledge Representation**: Store knowledge in OpenCog's AtomSpace
+- 🤖 **Logical Reasoning**: Forward/backward chaining, pattern matching
+- 📚 **Domain Knowledge**: Pre-loaded AI, science, and common-sense knowledge
+- 🔄 **Shared Memory**: All tools access the same knowledge base
+
+[See OpenCog Integration Guide](./docs/OPENCOG_INTEGRATION.md) for details.
 
 
 ## Documentation:
@@ -15,7 +25,8 @@
 [Connectivity](./docs/connectivity.md) •
 [How to update](./docs/installation.md#how-to-update-agent-zero) •
 [Documentation](./docs/README.md) •
-[Usage](./docs/usage.md)
+[Usage](./docs/usage.md) •
+[**OpenCog Integration**](./docs/OPENCOG_INTEGRATION.md)
 
 Or see DeepWiki generated documentation:
 

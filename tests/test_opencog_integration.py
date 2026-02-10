@@ -7,6 +7,7 @@ These tests cover:
 - Settings integration
 - AtomSpace operations (when OpenCog is available)
 - Graceful degradation when OpenCog is not installed
+- Shared AtomSpace manager functionality
 """
 
 import sys
@@ -48,6 +49,21 @@ def atomspace():
 def project_root():
     """Get the project root directory."""
     return Path(__file__).parent.parent
+
+
+@pytest.fixture
+def opencog_manager():
+    """Get the OpenCog manager instance."""
+    try:
+        from python.helpers.opencog_manager import get_opencog_manager
+        mgr = get_opencog_manager()
+        # Clean up any existing test atomspaces
+        for agent_id in list(mgr.get_all_agent_ids()):
+            if agent_id.startswith('test_'):
+                mgr.remove_atomspace(agent_id)
+        return mgr
+    except ImportError:
+        pytest.skip("OpenCog manager not available")
 
 
 # Availability Tests
@@ -337,6 +353,13 @@ def test_opencog_integration_summary():
         print(f"✓ {ext_path} exists")
     else:
         print(f"✗ {ext_path} not found")
+    
+    # Check manager
+    mgr_path = 'python/helpers/opencog_manager.py'
+    if (project_root / mgr_path).exists():
+        print(f"✓ {mgr_path} exists")
+    else:
+        print(f"✗ {mgr_path} not found")
 
     # Check prompts
     prompts_dir = project_root / 'prompts'
@@ -347,6 +370,83 @@ def test_opencog_integration_summary():
 
     # This test always passes - it's for summary information
     assert True
+
+
+# Shared AtomSpace Manager Tests
+@pytest.mark.opencog
+class TestOpenCogManager:
+    """Tests for the shared OpenCog manager."""
+
+    def test_manager_singleton(self, opencog_manager):
+        """Test that manager is a singleton."""
+        from python.helpers.opencog_manager import get_opencog_manager
+        mgr2 = get_opencog_manager()
+        assert opencog_manager is mgr2
+
+    def test_manager_availability(self, opencog_manager):
+        """Test checking OpenCog availability through manager."""
+        is_available = opencog_manager.is_available()
+        assert isinstance(is_available, bool)
+
+    def test_shared_atomspace_creation(self, opencog_manager):
+        """Test creating shared AtomSpace for agents."""
+        if not opencog_manager.is_available():
+            pytest.skip("OpenCog not available")
+        
+        # Create atomspaces for different agents
+        atomspace1 = opencog_manager.get_atomspace("test_agent1")
+        atomspace2 = opencog_manager.get_atomspace("test_agent2")
+        
+        assert atomspace1 is not None
+        assert atomspace2 is not None
+        assert atomspace1 is not atomspace2
+        
+        # Same agent should get same atomspace
+        atomspace1_again = opencog_manager.get_atomspace("test_agent1")
+        assert atomspace1 is atomspace1_again
+
+    def test_atomspace_isolation(self, opencog_manager):
+        """Test that different agents have isolated AtomSpaces."""
+        if not opencog_manager.is_available():
+            pytest.skip("OpenCog not available")
+        
+        from opencog.type_constructors import ConceptNode
+        
+        # Get separate atomspaces
+        atomspace1 = opencog_manager.get_atomspace("test_isolation1")
+        atomspace2 = opencog_manager.get_atomspace("test_isolation2")
+        
+        # Clear them
+        opencog_manager.clear_atomspace("test_isolation1")
+        opencog_manager.clear_atomspace("test_isolation2")
+        
+        # Add knowledge to atomspace1
+        opencog_manager.get_atomspace("test_isolation1")
+        concept1 = ConceptNode("IsolatedConcept")
+        atomspace1.add(concept1)
+        
+        count1 = len(atomspace1)
+        count2 = len(atomspace2)
+        
+        # Atomspace1 should have atoms, atomspace2 should still be empty
+        assert count1 >= 1
+        assert atomspace1 is not atomspace2
+
+    def test_manager_stats(self, opencog_manager):
+        """Test getting manager statistics."""
+        if not opencog_manager.is_available():
+            pytest.skip("OpenCog not available")
+        
+        # Create some atomspaces
+        opencog_manager.get_atomspace("test_stats1")
+        opencog_manager.get_atomspace("test_stats2")
+        
+        stats = opencog_manager.get_stats()
+        
+        assert "opencog_available" in stats
+        assert "atomspaces" in stats
+        assert stats["atomspaces"] >= 2
+        assert "agents" in stats
 
 
 if __name__ == "__main__":
